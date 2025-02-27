@@ -1,0 +1,34 @@
+{
+    "name": "PlayerInputActions",
+    "maps": [
+        {
+            "name": "UI",
+            "id": "b5f0a6cf-461f-402d-a573-a77bb1068e2b",
+            "actions": [
+                {
+                    "name": "CapturePoster",
+                    "type": "Button",
+                    "id": "49c6ff22-928e-4070-a6bb-6238328df8fe",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "1f6967e1-d0b8-495a-ba1f-ba4cc23bc65a",
+                    "path": "<Touchscreen>/touch*/Press",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "CapturePoster",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}
