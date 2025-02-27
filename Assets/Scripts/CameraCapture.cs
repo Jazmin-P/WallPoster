@@ -2,30 +2,22 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 public class CameraCapture : MonoBehaviour
 {
     public RawImage cameraFeed;
     public RawImage ThumbnailImage;
+    public GameObject LibraryPanel;
+    public RectTransform openLibraryButtonRect;
+    public RectTransform closeLibraryButtonRect;
     private WebCamTexture webCamTexture;
     private string savePath;
-    private PlayerInput playerInput; // Reference to the generated input class.
+    private List<string> capturedImagePaths = new List<string>();
 
     void Awake()
     {
-        playerInput = new PlayerInput(); // Initialize the input class.
-    }
-
-    void OnEnable()
-    {
-        playerInput.UI.Enable(); // Enable the UI action map.
-        playerInput.UI.CapturePoster.performed += OnCapturePoster; // Subscribe to the event.
-    }
-
-    void OnDisable()
-    {
-        playerInput.UI.CapturePoster.performed -= OnCapturePoster; // Unsubscribe to the event.
-        playerInput.UI.Disable(); // Disable the UI action map.
+        Debug.Log("CameraCaptureTest Awake() called.");
     }
 
     void Start()
@@ -52,9 +44,9 @@ public class CameraCapture : MonoBehaviour
         }
     }
 
-    void OnCapturePoster(InputAction.CallbackContext context)
+    public void CapturePoster() // Changed from OnCapturePoster to CapturePoster
     {
-        Debug.Log("CaptureImage() function called.");
+        Debug.Log("CapturePoster() called.");
         ThumbnailImage.gameObject.SetActive(false);
         Texture2D photo = new Texture2D(webCamTexture.width, webCamTexture.height);
         photo.SetPixels(webCamTexture.GetPixels());
@@ -66,6 +58,7 @@ public class CameraCapture : MonoBehaviour
         {
             File.WriteAllBytes(filePath, bytes);
             Debug.Log("Image saved to: " + filePath);
+            capturedImagePaths.Add(filePath);
         }
         catch (System.Exception ex)
         {
@@ -84,5 +77,77 @@ public class CameraCapture : MonoBehaviour
         {
             Debug.LogError("Error loading image: " + ex.Message);
         }
+    }
+
+    public void OpenLibrary()
+    {
+        LibraryPanel.SetActive(true);
+        DisplayLibraryImages();
+    }
+
+    public void DisplayLibraryImages()
+    {
+        Debug.Log("DisplayLibraryImages() called. Captured image count: " + capturedImagePaths.Count);
+
+        capturedImagePaths.Clear(); // Clear the list before loading new images
+
+        // Repopulate the capturedImagePaths list
+        string savePath = Application.persistentDataPath + "/CapturedImages/";
+        if (Directory.Exists(savePath))
+        {
+            string[] files = Directory.GetFiles(savePath, "*.png");
+            foreach (string file in files)
+            {
+                capturedImagePaths.Add(file);
+            }
+        }
+
+        // Clear existing images (if any)
+        foreach (Transform child in LibraryPanel.transform)
+        {
+            if (child.name.StartsWith("LibraryImage_"))
+            {
+                Destroy(child.gameObject);
+            }
+        }
+
+        // Display new images
+        for (int i = 0; i < capturedImagePaths.Count; i++)
+        {
+            Debug.Log("Loading image: " + capturedImagePaths[i]);
+
+            string filePath = capturedImagePaths[i];
+            Texture2D texture = new Texture2D(2, 2);
+            byte[] fileData = File.ReadAllBytes(filePath);
+            texture.LoadImage(fileData);
+
+            GameObject imageObject = new GameObject("LibraryImage_" + i);
+            imageObject.transform.SetParent(LibraryPanel.transform, false);
+
+            RawImage rawImage = imageObject.AddComponent<RawImage>();
+            rawImage.texture = texture;
+
+            // Adjust the Rect Transform of the imageObject as needed
+            RectTransform rectTransform = imageObject.GetComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(100, 100); // Example size
+                                                             // Add layout elements to automatically place images in a grid or scroll view.
+        }
+    }
+
+    public void CloseLibrary()
+    {
+        LibraryPanel.SetActive(false);
+    }
+
+    void OnOpenLibrary(InputAction.CallbackContext context)
+    {
+        Debug.Log("OnOpenLibrary() called.");
+        OpenLibrary();
+    }
+
+    void OnCloseLibrary(InputAction.CallbackContext context)
+    {
+        Debug.Log("OnCloseLibrary() called.");
+        CloseLibrary();
     }
 }
