@@ -254,13 +254,13 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.xr.arkit": {
-      "version": "5.1.5",
+      "version": "5.1.6",
       "depth": 0,
       "source": "registry",
       "dependencies": {
         "com.unity.xr.core-utils": "2.1.0",
         "com.unity.xr.management": "4.0.1",
-        "com.unity.xr.arfoundation": "5.1.5",
+        "com.unity.xr.arfoundation": "5.1.6",
         "com.unity.editorcoroutines": "1.0.0"
       },
       "url": "https://packages.unity.com"
@@ -292,7 +292,7 @@
     },
     "com.unity.xr.interactionsubsystems": {
       "version": "2.0.0",
-      "depth": 2,
+      "depth": 1,
       "source": "registry",
       "dependencies": {
         "com.unity.modules.subsystems": "1.0.0"
@@ -310,8 +310,8 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.xr.magicleap": {
-      "version": "7.0.0",
-      "depth": 1,
+      "version": "7.1.1",
+      "depth": 0,
       "source": "registry",
       "dependencies": {
         "com.unity.ugui": "1.0.0",
