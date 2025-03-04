@@ -24,6 +24,12 @@ public class RoomManager : MonoBehaviour
         // Make sure welcome canvas is visible at start
         welcomeCanvas.gameObject.SetActive(true);
         
+        // Make sure room template is inactive at start
+        if (roomTemplate != null)
+        {
+            roomTemplate.SetActive(false);
+        }
+
         LoadRoomNames();
         if (HasExistingRooms())
         {
@@ -35,7 +41,17 @@ public class RoomManager : MonoBehaviour
             string lastUsedRoom = PlayerPrefs.GetString(LAST_USED_ROOM_KEY, "");
             if (!string.IsNullOrEmpty(lastUsedRoom) && RoomExists(lastUsedRoom))
             {
-                ActivateRoom(lastUsedRoom);
+                int roomIndex = rooms.FindIndex(r => r.name == lastUsedRoom);
+                if (roomIndex >= 0)
+                {
+                    roomDropdown.value = roomIndex;
+                }
+            }
+            
+            // Make sure all rooms are initially inactive
+            foreach (GameObject room in rooms)
+            {
+                room.SetActive(false);
             }
         }
         else
@@ -91,37 +107,30 @@ public class RoomManager : MonoBehaviour
     {
         Debug.Log($"Creating room with name: {roomName}");
         GameObject newRoom = Instantiate(roomTemplate);
-        if (newRoom == null)
-        {
-            Debug.LogError("Failed to instantiate room template!");
-            return;
-        }
         newRoom.name = roomName;
         
-        // Find the room name text component
-        TextMeshProUGUI roomText = newRoom.GetComponentInChildren<TextMeshProUGUI>();
-        if (roomText == null)
+        // Find and set up the room name text and buttons in the instantiated room
+        TextMeshProUGUI[] texts = newRoom.GetComponentsInChildren<TextMeshProUGUI>();
+        Button[] buttons = newRoom.GetComponentsInChildren<Button>();
+        
+        foreach (TextMeshProUGUI text in texts)
         {
-            Debug.LogError("No TextMeshProUGUI component found in room template!");
-            return;
+            if (text.gameObject.name == "RoomNameText")
+            {
+                text.text = roomName;
+            }
+            else if (text.transform.parent.name == "CaptureButton")  // Check the button's name
+            {
+                text.text = "Capture Poster";
+            }
+            else if (text.transform.parent.name == "OpenLibraryButton")  // Check if it's the library button
+            {
+                text.text = "Open Gallery";
+            }
         }
-        roomText.text = roomName;
-        
-        // Initialize the CameraCapture component
-        CameraCapture cameraCapture = newRoom.GetComponent<CameraCapture>();
-        if (cameraCapture == null)
-        {
-            Debug.LogError("No CameraCapture component found in room template!");
-            return;
-        }
-        
-        // Set the room as a child of the RoomManager
-        newRoom.transform.SetParent(transform, false);
-        
-        // Initially disable the room
-        newRoom.SetActive(false);
-        
+
         rooms.Add(newRoom);
+        newRoom.transform.SetParent(transform, false);
         Debug.Log($"Room {roomName} created successfully");
     }
 

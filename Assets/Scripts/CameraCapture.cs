@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.IO;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
+using TMPro;
 
 public class CameraCapture : MonoBehaviour
 {
@@ -14,6 +15,9 @@ public class CameraCapture : MonoBehaviour
     private WebCamTexture webCamTexture;
     private string savePath;
     private List<string> capturedImagePaths = new List<string>();
+    [SerializeField] private GameObject libraryContent; // Drag the Content object here
+    public Button captureButton; // Add this at the top with your other public variables
+    public Button OpenLibraryButton;
 
     void Awake()
     {
@@ -98,71 +102,129 @@ public class CameraCapture : MonoBehaviour
     public void OpenLibrary()
     {
         LibraryPanel.SetActive(true);
+        captureButton.gameObject.SetActive(false);
+        OpenLibraryButton.gameObject.SetActive(false);
         DisplayLibraryImages();
     }
 
     public void DisplayLibraryImages()
     {
-        Debug.Log("DisplayLibraryImages() called. Captured image count: " + capturedImagePaths.Count);
+        Debug.Log("DisplayLibraryImages() called");
+        
+        // Clear existing images first
+        foreach (Transform child in libraryContent.transform)
+        {
+            Destroy(child.gameObject);
+        }
 
-        capturedImagePaths.Clear(); // Clear the list before loading new images
-
-        // Repopulate the capturedImagePaths list
+        // Get all PNG files from the directory
         string savePath = Application.persistentDataPath + "/CapturedImages/";
-        if (Directory.Exists(savePath))
+        if (!Directory.Exists(savePath))
         {
-            string[] files = Directory.GetFiles(savePath, "*.png");
-            foreach (string file in files)
+            Debug.LogWarning("Save directory doesn't exist!");
+            return;
+        }
+
+        string[] files = Directory.GetFiles(savePath, "*.png");
+        Debug.Log($"Found {files.Length} images in directory");
+
+        foreach (string filePath in files)
+        {
+            try
             {
-                capturedImagePaths.Add(file);
+                // Load image
+                byte[] fileData = File.ReadAllBytes(filePath);
+                Texture2D texture = new Texture2D(2, 2);
+                if (!texture.LoadImage(fileData))
+                {
+                    Debug.LogError($"Failed to load image: {filePath}");
+                    continue;
+                }
+
+                // Create container
+                GameObject container = new GameObject("LibraryImage");
+                container.transform.SetParent(libraryContent.transform, false);
+                
+                RectTransform containerRect = container.AddComponent<RectTransform>();
+                containerRect.sizeDelta = new Vector2(600, 700);
+
+                // Create image
+                GameObject imageObj = new GameObject("Image");
+                imageObj.transform.SetParent(container.transform, false);
+                
+                RawImage image = imageObj.AddComponent<RawImage>();
+                image.texture = texture;
+                
+                RectTransform imageRect = imageObj.GetComponent<RectTransform>();
+                imageRect.anchorMin = Vector2.zero;
+                imageRect.anchorMax = Vector2.one;
+                imageRect.offsetMin = Vector2.zero;
+                imageRect.offsetMax = Vector2.zero;
+
+                // Add delete button
+                GameObject buttonObj = new GameObject("DeleteButton");
+                buttonObj.transform.SetParent(container.transform, false);
+                
+                Button deleteButton = buttonObj.AddComponent<Button>();
+                Image buttonImage = buttonObj.AddComponent<Image>();
+                buttonImage.color = Color.red;
+                
+                RectTransform buttonRect = buttonObj.GetComponent<RectTransform>();
+                buttonRect.sizeDelta = new Vector2(100, 30);
+                buttonRect.anchorMin = new Vector2(0.5f, 0);
+                buttonRect.anchorMax = new Vector2(0.5f, 0);
+                buttonRect.anchoredPosition = new Vector2(0, 15);
+
+                // Add button text
+                GameObject textObj = new GameObject("Text");
+                textObj.transform.SetParent(buttonObj.transform, false);
+                
+                TextMeshProUGUI text = textObj.AddComponent<TextMeshProUGUI>();
+                text.text = "Delete";
+                text.color = Color.white;
+                text.alignment = TextAlignmentOptions.Center;
+                
+                RectTransform textRect = textObj.GetComponent<RectTransform>();
+                textRect.anchorMin = Vector2.zero;
+                textRect.anchorMax = Vector2.one;
+                textRect.sizeDelta = Vector2.zero;
+
+                // Add delete functionality
+                string currentPath = filePath;
+                deleteButton.onClick.AddListener(() => DeleteImage(currentPath, container));
+
+                Debug.Log($"Added image from: {filePath}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error processing image {filePath}: {e.Message}");
             }
         }
 
-        // Clear existing images (if any)
-        foreach (Transform child in LibraryPanel.transform)
+        // Update grid layout
+        GridLayoutGroup grid = libraryContent.GetComponent<GridLayoutGroup>();
+        if (grid != null)
         {
-            if (child.name.StartsWith("LibraryImage_"))
-            {
-                Destroy(child.gameObject);
-            }
+            grid.cellSize = new Vector2(600, 700);
+            grid.spacing = new Vector2(20, 20);
+            grid.padding = new RectOffset(20, 20, 20, 20);
         }
+    }
 
-        // Display new images
-        for (int i = 0; i < capturedImagePaths.Count; i++)
+    private void DeleteImage(string filePath, GameObject imageContainer)
+    {
+        if (File.Exists(filePath))
         {
-            Debug.Log("Loading image: " + capturedImagePaths[i]);
-
-            string filePath = capturedImagePaths[i];
-            Texture2D texture = new Texture2D(2, 2);
-            byte[] fileData = File.ReadAllBytes(filePath);
-            texture.LoadImage(fileData);
-
-            GameObject imageObject = new GameObject("LibraryImage_" + i);
-            imageObject.transform.SetParent(LibraryPanel.transform, false);
-
-            RawImage rawImage = imageObject.AddComponent<RawImage>();
-            rawImage.texture = texture;
-
-            // Adjust the Rect Transform of the imageObject as needed
-            RectTransform rectTransform = imageObject.GetComponent<RectTransform>();
-            rectTransform.sizeDelta = new Vector2(100, 100); // Example size
+            File.Delete(filePath);
+            capturedImagePaths.Remove(filePath);
+            Destroy(imageContainer);
         }
     }
 
     public void CloseLibrary()
     {
         LibraryPanel.SetActive(false);
-    }
-
-    void OnOpenLibrary(InputAction.CallbackContext context)
-    {
-        Debug.Log("OnOpenLibrary() called.");
-        OpenLibrary();
-    }
-
-    void OnCloseLibrary(InputAction.CallbackContext context)
-    {
-        Debug.Log("OnCloseLibrary() called.");
-        CloseLibrary();
+        captureButton.gameObject.SetActive(true);
+        OpenLibraryButton.gameObject.SetActive(true);
     }
 }
