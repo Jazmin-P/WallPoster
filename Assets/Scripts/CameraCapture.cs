@@ -20,11 +20,19 @@ public class CameraCapture : MonoBehaviour
         Debug.Log("CameraCaptureTest Awake() called.");
     }
 
-    void Start()
+    private void Start()
     {
-        webCamTexture = new WebCamTexture();
-        cameraFeed.texture = webCamTexture;
-        webCamTexture.Play();
+        InitializeCamera();
+    }
+
+    public void InitializeCamera()
+    {
+        if (webCamTexture == null || !webCamTexture.isPlaying)
+        {
+            webCamTexture = new WebCamTexture();
+            cameraFeed.texture = webCamTexture;
+            webCamTexture.Play();
+        }
 
         savePath = Application.persistentDataPath + "/CapturedImages/";
         if (!Directory.Exists(savePath))
@@ -44,7 +52,15 @@ public class CameraCapture : MonoBehaviour
         }
     }
 
-    public void CapturePoster() // Changed from OnCapturePoster to CapturePoster
+    void OnDisable()
+    {
+        if (webCamTexture != null && webCamTexture.isPlaying)
+        {
+            webCamTexture.Stop();
+        }
+    }
+
+    public void CapturePoster()
     {
         Debug.Log("CapturePoster() called.");
         ThumbnailImage.gameObject.SetActive(false);
@@ -130,7 +146,6 @@ public class CameraCapture : MonoBehaviour
             // Adjust the Rect Transform of the imageObject as needed
             RectTransform rectTransform = imageObject.GetComponent<RectTransform>();
             rectTransform.sizeDelta = new Vector2(100, 100); // Example size
-                                                             // Add layout elements to automatically place images in a grid or scroll view.
         }
     }
 
