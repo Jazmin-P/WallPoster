@@ -111,13 +111,24 @@ public class CameraCapture : MonoBehaviour
     {
         Debug.Log("DisplayLibraryImages() called");
         
-        // Clear existing images first
+        // Clear existing images
         foreach (Transform child in libraryContent.transform)
         {
             Destroy(child.gameObject);
         }
 
-        // Get all PNG files from the directory
+        // Calculate sizes based on screen
+        RectTransform contentRect = libraryContent.GetComponent<RectTransform>();
+        float contentWidth = contentRect.rect.width;
+        float padding = 20f;  // Space between images and edges
+        float spacing = 20f;  // Space between images
+        float imagesPerRow = 2f;  // We want 2 images per row
+        
+        // Calculate image width: (ContentWidth - (padding * 2) - spacing) / 2
+        float imageWidth = (contentWidth - (padding * 2) - spacing) / imagesPerRow;
+        float imageHeight = imageWidth * 1.2f;  // Keep a nice aspect ratio, adjust this multiplier as needed
+
+        // Get all PNG files
         string savePath = Application.persistentDataPath + "/CapturedImages/";
         if (!Directory.Exists(savePath))
         {
@@ -126,7 +137,7 @@ public class CameraCapture : MonoBehaviour
         }
 
         string[] files = Directory.GetFiles(savePath, "*.png");
-        Debug.Log($"Found {files.Length} images in directory");
+        Debug.Log($"Found {files.Length} images in directory. Image size will be {imageWidth}x{imageHeight}");
 
         foreach (string filePath in files)
         {
@@ -146,7 +157,7 @@ public class CameraCapture : MonoBehaviour
                 container.transform.SetParent(libraryContent.transform, false);
                 
                 RectTransform containerRect = container.AddComponent<RectTransform>();
-                containerRect.sizeDelta = new Vector2(600, 700);
+                containerRect.sizeDelta = new Vector2(imageWidth, imageHeight + 40); // +40 for delete button space
 
                 // Create image
                 GameObject imageObj = new GameObject("Image");
@@ -158,7 +169,7 @@ public class CameraCapture : MonoBehaviour
                 RectTransform imageRect = imageObj.GetComponent<RectTransform>();
                 imageRect.anchorMin = Vector2.zero;
                 imageRect.anchorMax = Vector2.one;
-                imageRect.offsetMin = Vector2.zero;
+                imageRect.offsetMin = new Vector2(0, 40); // Space for delete button
                 imageRect.offsetMax = Vector2.zero;
 
                 // Add delete button
@@ -170,7 +181,7 @@ public class CameraCapture : MonoBehaviour
                 buttonImage.color = Color.red;
                 
                 RectTransform buttonRect = buttonObj.GetComponent<RectTransform>();
-                buttonRect.sizeDelta = new Vector2(100, 30);
+                buttonRect.sizeDelta = new Vector2(120, 35);  // Increased from 100,30 to 120,35
                 buttonRect.anchorMin = new Vector2(0.5f, 0);
                 buttonRect.anchorMax = new Vector2(0.5f, 0);
                 buttonRect.anchoredPosition = new Vector2(0, 15);
@@ -205,9 +216,9 @@ public class CameraCapture : MonoBehaviour
         GridLayoutGroup grid = libraryContent.GetComponent<GridLayoutGroup>();
         if (grid != null)
         {
-            grid.cellSize = new Vector2(600, 700);
-            grid.spacing = new Vector2(20, 20);
-            grid.padding = new RectOffset(20, 20, 20, 20);
+            grid.cellSize = new Vector2(imageWidth, imageHeight + 40);
+            grid.spacing = new Vector2(spacing, spacing);
+            grid.padding = new RectOffset((int)padding, (int)padding, (int)padding, (int)padding);
         }
     }
 
